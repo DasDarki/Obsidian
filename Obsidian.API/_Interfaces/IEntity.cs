@@ -10,6 +10,11 @@ public interface IEntity
     public INavigator Navigator { get; set; }
 
     public IGoalController GoalController { get; set; }
+    
+    /// <summary>
+    /// A list containing all <see cref="IComponent"/>s assigned to this entity.
+    /// </summary>
+    public IReadOnlyList<IComponent> Components { get; }
 
     public Guid Uuid { get; set; }
 
@@ -49,6 +54,29 @@ public interface IEntity
     public Task TeleportAsync(IWorld world);
     public Task TeleportAsync(IEntity to);
     public Task TeleportAsync(VectorF pos);
+
+    /// <summary>
+    /// Checks if the <see cref="IComponent"/> of the given type is currently assigned to this entity.
+    /// </summary>
+    /// <typeparam name="T">The type of the <see cref="IComponent"/>.</typeparam>
+    /// <returns>True, if the wanted <see cref="IComponent"/> is assigned.</returns>
+    public bool HasComponent<T>() where T : IComponent;
+
+    /// <summary>
+    /// Returns the <see cref="IComponent"/> of the given type which is currently assigned to this entity or,
+    /// if the <see cref="IComponent"/> does not exist, a new <see cref="IComponent"/> will be added to this entity
+    /// and then returned.
+    /// </summary>
+    /// <typeparam name="T">The type of the <see cref="IComponent"/>.</typeparam>
+    /// <returns>The <see cref="IComponent"/></returns>
+    public Task<T?> GetComponentAsync<T>() where T : IComponent;
+
+    /// <summary>
+    /// Removes the <see cref="IComponent"/> of the given type from this entity. If the component does not exist
+    /// nothing will happen.
+    /// </summary>
+    /// <typeparam name="T">The type of the <see cref="IComponent"/> which will be removed.</typeparam>
+    public Task RemoveComponentAsync<T>() where T : IComponent;
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 

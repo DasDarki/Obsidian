@@ -27,6 +27,8 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public int EntityId { get; internal set; }
 
+    public IReadOnlyList<IComponent> Components => _components.Values.ToList().AsReadOnly();
+    
     public Guid Uuid { get; set; } = Guid.NewGuid();
 
     public Pose Pose { get; set; } = Pose.Standing;
@@ -57,9 +59,11 @@ public class Entity : IEquatable<Entity>, IEntity
     public INavigator Navigator { get; set; }
     public IGoalController GoalController { get; set; }
 
+    private readonly ConcurrentDictionary<Type, IComponent> _components;
+
     public Entity()
     {
-
+        _components = new ConcurrentDictionary<Type, IComponent>();
     }
 
     #region Update methods
@@ -410,5 +414,29 @@ public class Entity : IEquatable<Entity>, IEntity
             Pitch = this.Pitch,
             Yaw = this.Yaw
         });
+    }
+
+    public bool HasComponent<T>() where T : IComponent => _components.ContainsKey(typeof(T));
+
+    public async Task<T?> GetComponentAsync<T>() where T : IComponent
+    {
+        var type = typeof(T);
+        if (_components.ContainsKey(type))
+            return (T) _components[type];
+
+        var component = Activator.CreateInstance<T>();
+        if (!_components.TryAdd(type, component))
+            return default;
+        
+        await component.OnAssign(this);
+        return component;
+    }
+
+    public async Task RemoveComponentAsync<T>() where T : IComponent
+    {
+        var type = typeof(T);
+        if (_components.ContainsKey(type))
+            if (_components.TryRemove(type, out var component))
+                await component.OnRemove(this);
     }
 }
